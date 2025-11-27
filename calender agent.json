@@ -1,0 +1,509 @@
+{
+  "name": "calender agent",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }} || {{ $json.sessionId }}",
+        "options": {
+          "systemMessage": "You are a Google Calendar assistant.\nYour primary goal is to assist the user in managing their calendar effectively using two tools: Event Creation and Event Retrieval. Always base your responses on the current date: \n{{ DateTime.local().toFormat('cccc d LLLL yyyy') }}.\nGeneral Guidelines:\nIf the user's initial message is vague (e.g., \"hello\" or a generic greeting) or does not specify a request, explain your capabilities clearly:\nExample: \"Hello! I can help you manage your Google Calendar. You can ask me to create an event or retrieve event data. What would you like me to do?\"\nIf the user specifies a request in their first message, begin preparing to use the appropriate tool:\nFor event creation, gather necessary details like start date, end date, title, and description.\nFor event retrieval, ask for the date range or time period they want to query.\nTool: Event Creation\nWhen asked to create an event:\n\nRequest the start and end dates/times from the user.\nDate format: YYYY-MM-DD HH:mm:ss\nCollect the following information:\nstart_date: Exact start date and time of the event.\nend_date: Exact end date and time of the event.\nevent_title: Event title in uppercase. Suggest one if not provided.\nevent_description: Generate a brief description and present it for confirmation.\nTool: Event Retrieval\nWhen asked to retrieve events:\n\nAsk for the date range or period they are interested in. Examples:\nFor \"last week,\" retrieve events from Monday of the previous week to Friday of the same week.\nFor \"today,\" use the current date.\nFormat the date range:\nstart_date: Start date and time in YYYY-MM-DD HH:mm:ss.\nend_date: End date and time in YYYY-MM-DD HH:mm:ss.\nKey Behaviors:\nClarity: Provide a clear and helpful introduction when the user's request is unclear.\nValidation: Confirm details with the user before finalizing actions.\nAdaptation: Handle varying levels of detail in requests (e.g., \"Add a meeting for next Monday morning\" or \"Retrieve my events for this weekend\").\nProactivity: Offer suggestions to fill in missing details or clarify ambiguous inputs.\nLanguage Matching: Ensure all interactions, including event titles, descriptions, and messages, are in the user's language to provide a seamless experience.\nuse defalt time zone to Asia/kolkata for creating any event or retrieve a event  \nTask Creation\nIf the user wants to create a task, ask for:\ntask_title (short and clear)\ntask_due_date (optional, if they want to set a deadline)\nAuto-generate a task_description if not provided\nConfirm before sending to Google Tasks"
+        }
+      },
+      "id": "5ee3fd8c-1bc3-4626-9fc6-17db70f9c050",
+      "name": "Calendar AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        416,
+        0
+      ],
+      "typeVersion": 1.7,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "task": "MDk4MTgwNzYzMzk4NzYzNzQ2MDE6MDow",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        352
+      ],
+      "id": "c82e9d8d-6fbd-4c73-b9d4-1d8772b2ba1d",
+      "name": "Google Tasks",
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "SqcCcp7VcPFOYZNB",
+          "name": "Google Tasks account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        272,
+        336
+      ],
+      "id": "4de88cd2-fefd-4dd3-8276-d6be226d3317",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "uCy8bmQfaeJzoneC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        352
+      ],
+      "id": "bbfd7ff6-d263-4838-a060-303d1b20bab7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatBot_n8n",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -592,
+        992
+      ],
+      "id": "ac3eb14b-5ad0-4c04-9312-689ada6cadc4",
+      "name": "Webhook1",
+      "webhookId": "4e6587a3-8fed-4e5e-9f88-94ed3488f9d6"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"message\": \" {{ $json.body.message }}\",\n  \"sessionId\": \"{{ $json.body.sessionId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        1008
+      ],
+      "id": "ee42562c-94bd-4a74-8783-d0d0a3397c50",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $json.output || $json.answer || \"No response received from AI.\" } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        1024
+      ],
+      "id": "76fa047c-414a-40f8-acb2-d9f363265946",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this Google Calendar tool when you are asked to create an event.",
+        "calendar": {
+          "__rl": true,
+          "value": "amandeepsinghoff@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amandeepsinghoff@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "attendees": [],
+          "description": "={{ $fromAI('event_description') }} ",
+          "summary": "={{ $fromAI('event_title') }} "
+        },
+        "remindersUi": {
+          "remindersValues": [
+            {
+              "method": "popup",
+              "minutes": 10
+            }
+          ]
+        }
+      },
+      "id": "d757d2bf-8aa7-406e-a9e2-9a7b18fde5fd",
+      "name": "Google Calendar - Create events1",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        800,
+        416
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jKE01jckSlMxHiIj",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool when you’re asked to retrieve events data.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "amandeepsinghoff@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amandeepsinghoff@gmail.com"
+        },
+        "options": {
+          "timeMin": "={{ $fromAI('start_date') }}",
+          "timeMax": "={{ $fromAI('end_date') }}"
+        }
+      },
+      "id": "b6a38b7f-6a19-4df9-9d64-962c9af06a9e",
+      "name": "Google Calendar - Get Events",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        608,
+        384
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jKE01jckSlMxHiIj",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b7280f7a-8f80-4268-845c-e6976eec3498",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -96,
+        1440
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool when you’re asked to retrieve events data.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "amandeepsinghoff@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amandeepsinghoff@gmail.com"
+        },
+        "options": {
+          "timeMin": "={{ $fromAI('start_date') }}",
+          "timeMax": "={{ $fromAI('end_date') }}"
+        }
+      },
+      "id": "8febd528-c0bf-4143-8f46-5895da691080",
+      "name": "Google Calendar - Get Events1",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        160,
+        1408
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jKE01jckSlMxHiIj",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook1').item.json.body.message }} || {{ $('Webhook1').item.json.body.sessionId }}",
+        "options": {
+          "systemMessage": "You are a Google Calendar assistant.\nYour primary goal is to assist the user in managing their calendar effectively using two tools: Event Creation and Event Retrieval. Always base your responses on the current date: \n{{ DateTime.local().toFormat('cccc d LLLL yyyy') }}.\nGeneral Guidelines:\nIf the user's initial message is vague (e.g., \"hello\" or a generic greeting) or does not specify a request, explain your capabilities clearly:\nExample: \"Hello! I can help you manage your Google Calendar. You can ask me to create an event or retrieve event data. What would you like me to do?\"\nIf the user specifies a request in their first message, begin preparing to use the appropriate tool:\nFor event creation, gather necessary details like start date, end date, title, and description.\nFor event retrieval, ask for the date range or time period they want to query.\nTool: Event Creation\nWhen asked to create an event:\n\nRequest the start and end dates/times from the user.\nDate format: YYYY-MM-DD HH:mm:ss\nCollect the following information:\nstart_date: Exact start date and time of the event.\nend_date: Exact end date and time of the event.\nevent_title: Event title in uppercase. Suggest one if not provided.\nevent_description: Generate a brief description and present it for confirmation.\nTool: Event Retrieval\nWhen asked to retrieve events:\n\nAsk for the date range or period they are interested in. Examples:\nFor \"last week,\" retrieve events from Monday of the previous week to Friday of the same week.\nFor \"today,\" use the current date.\nFormat the date range:\nstart_date: Start date and time in YYYY-MM-DD HH:mm:ss.\nend_date: End date and time in YYYY-MM-DD HH:mm:ss.\nKey Behaviors:\nClarity: Provide a clear and helpful introduction when the user's request is unclear.\nValidation: Confirm details with the user before finalizing actions.\nAdaptation: Handle varying levels of detail in requests (e.g., \"Add a meeting for next Monday morning\" or \"Retrieve my events for this weekend\").\nProactivity: Offer suggestions to fill in missing details or clarify ambiguous inputs.\nLanguage Matching: Ensure all interactions, including event titles, descriptions, and messages, are in the user's language to provide a seamless experience.\nuse defalt time zone to Asia/kolkata for creating any event or retrieve a event  \nTask Creation\nIf the user wants to create a task, ask for:\ntask_title (short and clear)\ntask_due_date (optional, if they want to set a deadline)\nAuto-generate a task_description if not provided\nConfirm before sending to Google Tasks"
+        }
+      },
+      "id": "1cbd1256-9a2a-4031-9b70-61c8e9e6e361",
+      "name": "Calendar AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        16,
+        1120
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this Google Calendar tool when you are asked to create an event.",
+        "calendar": {
+          "__rl": true,
+          "value": "amandeepsinghoff@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amandeepsinghoff@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "attendees": [],
+          "description": "={{ $fromAI('event_description') }} ",
+          "summary": "={{ $fromAI('event_title') }} "
+        },
+        "remindersUi": {
+          "remindersValues": [
+            {
+              "method": "popup",
+              "minutes": 10
+            }
+          ]
+        }
+      },
+      "id": "5c269137-03d8-4617-8b30-65c3e8158b22",
+      "name": "Google Calendar - Create events",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        352,
+        1392
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jKE01jckSlMxHiIj",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this Google task tool when you are asked to create an task.",
+        "task": "MDk4MTgwNzYzMzk4NzYzNzQ2MDE6MDow",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        512,
+        1232
+      ],
+      "id": "8b2a378e-b113-4509-83c9-39060a4b3037",
+      "name": "Google Tasks1",
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "SqcCcp7VcPFOYZNB",
+          "name": "Google Tasks account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1280
+      ],
+      "id": "20d686f7-556c-4523-b7ae-3b8b322b9858",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "uCy8bmQfaeJzoneC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create events1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Get Events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Get Events1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Tasks1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "60053877-e52e-4c3e-a515-3fbe14843618",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bcfcd7668aa2fefb15551c4e9756682d24d04febb5f03b5f132ca4b304fb8466"
+  },
+  "id": "pUvLw0zqYghyriVL",
+  "tags": []
+}
