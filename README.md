@@ -48,7 +48,7 @@ Mentora uses an **Agent Router** that classifies user queries and directs them t
 | Component | Technology |
 |----------|-------------|
 | Automation | n8n |
-| LLM | Groq API |
+| LLM | Gemini 2.0 |
 | Integrations | Google Calendar API, Google Tasks API |
 | Frontend | Streamlit |
 | Languages | Python, JavaScript |
